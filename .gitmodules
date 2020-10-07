@@ -1,0 +1,3 @@
+[submodule "FinalStateMachineEmbedded"]
+	path = FinalStateMachineEmbedded
+	url = https://github.com/dotchetter/FinalStateMachineEmbedded.git
