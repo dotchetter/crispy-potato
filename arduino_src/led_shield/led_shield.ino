@@ -1,5 +1,4 @@
 #include "StateMachine.h"
-#include "States.h"
 #include "helpers.h"
 
 #define POTENTIOMETER_PIN 0
@@ -9,18 +8,23 @@
 #define RGB_GREEN_PIN 9
 #define RGB_BLUE_PIN 10
 
-#define DEBOUNCE_MILLIS 180
+#define DEBOUNCE_MILLIS 150
 #define POTENTIOMETER_MAX 1023
+#define ENDLINE '\n'
 
 struct LED diodes [3];
 
 KEY key1;
 KEY key2;
 
+const char command[] = "TJENA";
+
 StateMachine sm = StateMachine(&idle, State::IDLE);
 
 void setup()
 {
+    Serial.begin(9600);
+    
     key1.pin = KEY_1_PIN;
     key1.last_press_millis = 0;
 
@@ -46,15 +50,53 @@ void setup()
     pinMode(diodes[1].pin, OUTPUT);
     pinMode(diodes[2].pin, OUTPUT);
     
-    Serial.begin(9600);
-
     sm.addState(&rainbow, State::LED_RAINBOW);
     sm.addState(&cycle, State::LED_CYCLE);
+    sm.addState(&parseSerialCommand, State::READ_SERIAL);
+    sm.addState(&off, State::OFF);
+}
+
+
+void parseSerialBus(char* read_buffer, size_t buf_size)
+{
+    char parsed_char;
+    int bytes_available;
+    int char_count;
+    
+    while(Serial.available())
+    {
+        parsed_char = Serial.read();
+        if (parsed_char == ENDLINE)
+        {
+            break;
+        }     
+        read_buffer[char_count] = parsed_char;
+        char_count++;
+    }
+    if (strcmp(read_buffer, command) == 0)
+    {
+        Serial.println(read_buffer);
+    }
+    else
+    {
+        Serial.println(read_buffer[0]);
+    }
+    sm.release();
+}
+
+
+void parseSerialCommand()
+{
+    char serial_feed_buffer[256];
+    parseSerialBus(serial_feed_buffer, sizeof(serial_feed_buffer));
+    
 }
 
 
 void idle()
 {
+    sm.transitionTo(State::READ_SERIAL);
+    
     if (debounceKey(&key1, DEBOUNCE_MILLIS))
     {
         if (keyOnClickEvent(&key1))
