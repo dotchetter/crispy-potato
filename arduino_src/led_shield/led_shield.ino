@@ -44,75 +44,81 @@ void setup()
     diodes[2].fade_direction = FADE_DIRECTION::DOWN;
 
     pinMode(POTENTIOMETER_PIN, INPUT);
+    pinMode(INTERRUPT_PIN, INPUT_PULLUP);
     pinMode(key1.pin, INPUT);
     pinMode(key2.pin, INPUT);
     pinMode(diodes[0].pin, OUTPUT);
     pinMode(diodes[1].pin, OUTPUT);
     pinMode(diodes[2].pin, OUTPUT);
+
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), off, HIGH);
+    
+    uart_control.demanded_state = sm.getCurrentState();
     
     sm.addState(&rainbow, State::LED_RAINBOW);
     sm.addState(&cycle, State::LED_CYCLE);
-    sm.addState(&parseSerialCommand, State::READ_SERIAL);
+    sm.addState(&parseSerialCommand, State::READ_SERIAL);    
     sm.addState(&off, State::OFF);
+
+    Serial.println(WELCOME);
+    Serial.println(MENU_1);
+    Serial.println(MENU_2);
 }
 
-
-void parseSerialBus(char* read_buffer, size_t buf_size)
+void parseSerialBus()
 {
-    char parsed_char;
-    int bytes_available;
-    int char_count;
+    int count;
     
     while(Serial.available())
     {
-        parsed_char = Serial.read();
-        if (parsed_char == ENDLINE)
+        if (count < sizeof(serial_feed_buffer) / sizeof(serial_feed_buffer[0]))
         {
-            break;
-        }     
-        read_buffer[char_count] = parsed_char;
-        char_count++;
-    }
-    if (strcmp(read_buffer, command) == 0)
-    {
-        Serial.println(read_buffer);
-    }
-    else
-    {
-        Serial.println(read_buffer[0]);
+            serial_feed_buffer[count] = Serial.read();
+            count++;
+        }
     }
     sm.release();
 }
 
-
 void parseSerialCommand()
 {
-    char serial_feed_buffer[256];
-    parseSerialBus(serial_feed_buffer, sizeof(serial_feed_buffer));
+    size_t buf_size = sizeof(serial_feed_buffer) / sizeof(serial_feed_buffer[0]);
+    parseSerialBus();
+
+    State uart_state_before_read = uart_control.demanded_state;
     
-}
-
-
-void idle()
-{
-    sm.transitionTo(State::READ_SERIAL);
-    
-    if (debounceKey(&key1, DEBOUNCE_MILLIS))
+    if (serial_feed_buffer[0] != 0)
     {
-        if (keyOnClickEvent(&key1))
+        Serial.println(serial_feed_buffer[0]);
+        switch(serial_feed_buffer[0])
         {
-            sm.transitionTo(State::LED_CYCLE);
-        }  
-    }  
-
-    if (debounceKey(&key2, 1))
-    {
-        if (keyOnClickEvent(&key2))
-        {
-            sm.transitionTo(State::LED_RAINBOW);
+            case '1':
+                uart_control.demanded_state = State::LED_CYCLE;
+                break;
+            case '2':
+                uart_control.demanded_state = State::LED_RAINBOW;
+                break;
+            case '3':
+                uart_control.demanded_state = State::OFF;
+                break;
+            case 'q':
+                uart_control.demanded_state = sm.getMainState();
+                break;
         }
     }
+    
+    if (uart_state_before_read != uart_control.demanded_state)
+    {
+        uart_control.active = 1;
+        Serial.print(F("Entering '"));
+        Serial.print(STATES_TO_TEXT[(int)uart_control.demanded_state]);
+        Serial.print(F("' mode. To quit, press 'q' or press one of the physical buttons on Crispy.\n"));
+    }
+    
+    memset(serial_feed_buffer, 0, buf_size);
+    sm.release();
 }
+
 
 void rainbow()
 {

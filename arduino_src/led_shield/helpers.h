@@ -77,7 +77,7 @@ const byte getDigitalPotentiometerReading(byte pin)
  * convert reading from potentiometer (0, 1023) to 
  * digital representation of a byte (1,255)
 */
-    return map(analogRead(pin), 0, 1023, 1, 255);
+    return map(analogRead(pin), 0, 1023, 25, 255);
 }
 
 void fadeLedStateful(LED *led)
