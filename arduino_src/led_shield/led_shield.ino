@@ -227,6 +227,44 @@ void cycle()
     sm.release();
 }
 
+void idle()
+{
+    static unsigned long last_uart_state_executed_millis;
+    static unsigned long last_serial_parse_millis;
+
+    int potentiometer_reading = getDigitalPotentiometerReading(POTENTIOMETER_PIN);
+
+    if (assertDelayTimePassed(last_uart_state_executed_millis, potentiometer_reading) && uart_control.active)
+    {
+        sm.transitionTo(uart_control.demanded_state);
+        last_uart_state_executed_millis = millis();
+    }    
+
+    if (assertDelayTimePassed(last_serial_parse_millis, SERIAL_PARSE_INTERVAL))
+    {
+        sm.transitionTo(State::READ_SERIAL);
+        last_serial_parse_millis = millis();
+    }
+    
+    if (debounceKey(&key1, DEBOUNCE_MILLIS))
+    {
+        if (keyOnClickEvent(&key1))
+        {
+            uart_control.active= 0;
+            sm.transitionTo(State::LED_CYCLE);
+        }  
+    }  
+
+    if (debounceKey(&key2, 1))
+    {
+        if (keyOnClickEvent(&key2))
+        {
+            uart_control.active= 0;
+            sm.transitionTo(State::LED_RAINBOW);
+        }
+    }
+}
+
 void off()
 {
     for (byte i = 0; i < sizeof(diodes) / sizeof(diodes[0]); i++)
