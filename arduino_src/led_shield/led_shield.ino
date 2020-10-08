@@ -1,23 +1,27 @@
 #include "StateMachine.h"
 #include "helpers.h"
 
+// Pins
 #define POTENTIOMETER_PIN 0
 #define KEY_1_PIN 8
 #define KEY_2_PIN 12
 #define RGB_RED_PIN 11
 #define RGB_GREEN_PIN 9
 #define RGB_BLUE_PIN 10
+#define INTERRUPT_PIN 2
 
+// Various constants
 #define DEBOUNCE_MILLIS 150
 #define POTENTIOMETER_MAX 1023
-#define ENDLINE '\n'
+#define SERIAL_PARSE_INTERVAL 500
 
+// Instances 
 struct LED diodes [3];
-
 KEY key1;
 KEY key2;
+UART_ST uart_control;
+StateMachine sm = StateMachine(&idle, State::IDLE);
 
-const char command[] = "TJENA";
 
 StateMachine sm = StateMachine(&idle, State::IDLE);
 
