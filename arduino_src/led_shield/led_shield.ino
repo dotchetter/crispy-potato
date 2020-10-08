@@ -32,9 +32,11 @@ const char MENU_2[] = "1. Led Cycle mode\n2. Rainbow mode\n3. Turn off Leds\n\n(
 const char CURRENT_STATE_PARTIAL[] = "\n>> Crispy's current state: ";
 const char STATES_TO_TEXT[4][12] = {"Idle", "Led cycle", "Led rainbow", "Off"};
 
+
 void setup()
-{
+{    
     Serial.begin(9600);
+    memset(serial_feed_buffer, 0, sizeof(serial_feed_buffer) / sizeof(serial_feed_buffer[0]));
     
     key1.pin = KEY_1_PIN;
     key1.last_press_millis = 0;
