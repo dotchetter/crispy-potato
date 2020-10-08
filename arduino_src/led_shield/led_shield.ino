@@ -1,6 +1,7 @@
 #include "StateMachine.h"
 #include "helpers.h"
 
+
 // Pins
 #define POTENTIOMETER_PIN 0
 #define KEY_1_PIN 8
@@ -10,18 +11,21 @@
 #define RGB_BLUE_PIN 10
 #define INTERRUPT_PIN 2
 
+
 // Various constants
 #define DEBOUNCE_MILLIS 150
 #define POTENTIOMETER_MAX 1023
 #define SERIAL_PARSE_INTERVAL 500
+#define INTERRUPT_DEBOUNCE 20
+
 
 // Instances 
 struct LED diodes [3];
 KEY key1;
 KEY key2;
+KEY key_interrupt;
 UART_ST uart_control;
 StateMachine sm = StateMachine(&idle, State::IDLE);
-
 
 
 // UART interface
@@ -44,6 +48,9 @@ void setup()
     key2.pin = KEY_2_PIN;
     key2.last_press_millis = 0;
 
+    key_interrupt.pin = INTERRUPT_PIN;
+    key_interrupt.last_press_millis = 0;
+
     diodes[0].pin = RGB_RED_PIN;
     diodes[0].active = 0;
     diodes[0].fade_direction = FADE_DIRECTION::DOWN;
@@ -64,7 +71,7 @@ void setup()
     pinMode(diodes[1].pin, OUTPUT);
     pinMode(diodes[2].pin, OUTPUT);
 
-    //attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), off, HIGH);
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), interruptDebounce, HIGH);
     
     uart_control.demanded_state = sm.getCurrentState();
     
@@ -77,6 +84,25 @@ void setup()
     Serial.println(MENU_1);
     Serial.println(MENU_2);
 }
+
+
+// --------- Interrupt routines -----------
+
+
+void interruptDebounce()
+{
+    if (debounceKey(&last_press_millis, DEBOUNCE_MILLIS))
+    {
+        if (keyOnClickEvent(&key_interrupt, last_press_millis))
+        {
+            off();
+        }  
+    } 
+}
+
+
+// --------- State methods -----------
+
 
 void parseSerialBus()
 {
@@ -142,7 +168,6 @@ void parseSerialCommand()
     memset(serial_feed_buffer, 0, buf_size);
     sm.release();
 }
-
 
 void rainbow()
 {
@@ -238,6 +263,18 @@ void cycle()
     sm.release();
 }
 
+void off()
+{
+    for (byte i = 0; i < sizeof(diodes) / sizeof(diodes[0]); i++)
+    {
+        diodes[i].active = 0;
+        diodes[i].analog_value = 0;
+        diodes[i].fade_direction = FADE_DIRECTION::UP;
+        digitalWrite(diodes[i].pin, diodes[i].active);
+    }
+    sm.release();
+}
+
 void idle()
 {
     static unsigned long last_uart_state_executed_millis;
@@ -261,7 +298,7 @@ void idle()
     {
         if (keyOnClickEvent(&key1))
         {
-            uart_control.active= 0;
+            uart_control.active = 0;
             sm.transitionTo(State::LED_CYCLE);
         }  
     }  
@@ -270,23 +307,15 @@ void idle()
     {
         if (keyOnClickEvent(&key2))
         {
-            uart_control.active= 0;
+            uart_control.active = 0;
             sm.transitionTo(State::LED_RAINBOW);
         }
     }
 }
 
-void off()
-{
-    for (byte i = 0; i < sizeof(diodes) / sizeof(diodes[0]); i++)
-    {
-        diodes[i].active = 0;
-        diodes[i].analog_value = 0;
-        diodes[i].fade_direction = FADE_DIRECTION::UP;
-        digitalWrite(diodes[i].pin, diodes[i].active);
-    }
-    sm.release();
-}
+
+// --------- State methods -----------
+
 
 void loop()
 {
