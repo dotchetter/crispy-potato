@@ -23,7 +23,14 @@ UART_ST uart_control;
 StateMachine sm = StateMachine(&idle, State::IDLE);
 
 
-StateMachine sm = StateMachine(&idle, State::IDLE);
+
+// UART interface
+char serial_feed_buffer[256];
+const char WELCOME[] = "** Welcome to crispy-potato! **";
+const char MENU_1[] = "** Select mode and hit Enter. Once in a mode, type 'q' and enter to quit.**\n\n";
+const char MENU_2[] = "1. Led Cycle mode\n2. Rainbow mode\n3. Turn off Leds\n\n(!) Tip! Use the knob to adjust the speed";
+const char CURRENT_STATE_PARTIAL[] = "\n>> Crispy's current state: ";
+const char STATES_TO_TEXT[4][12] = {"Idle", "Led cycle", "Led rainbow", "Off"};
 
 void setup()
 {
