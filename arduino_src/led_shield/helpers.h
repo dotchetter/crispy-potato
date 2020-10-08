@@ -24,6 +24,11 @@ struct KEY
     unsigned long last_press_millis;
 };
 
+struct UART_ST
+{
+    State demanded_state;
+    byte active;
+};
 
 const byte debounceKey(KEY *key, int delay_time)
 {
