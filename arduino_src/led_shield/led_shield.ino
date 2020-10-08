@@ -64,7 +64,7 @@ void setup()
     pinMode(diodes[1].pin, OUTPUT);
     pinMode(diodes[2].pin, OUTPUT);
 
-    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), off, HIGH);
+    //attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), off, HIGH);
     
     uart_control.demanded_state = sm.getCurrentState();
     
@@ -119,15 +119,26 @@ void parseSerialCommand()
                 break;
         }
     }
-    
+
+  
     if (uart_state_before_read != uart_control.demanded_state)
     {
-        uart_control.active = 1;
-        Serial.print(F("Entering '"));
-        Serial.print(STATES_TO_TEXT[(int)uart_control.demanded_state]);
-        Serial.print(F("' mode. To quit, press 'q' or press one of the physical buttons on Crispy.\n"));
-    }
-    
+        if (uart_control.demanded_state == State::OFF)
+        {
+            Serial.print(F("Turned off all LEDs."));
+        }
+        else if (uart_control.demanded_state == sm.getMainState())
+        {
+            Serial.println(F("Quit previous mode"));
+        }
+        else
+        {
+            uart_control.active = 1;
+            Serial.print(F("Entering '"));
+            Serial.print(STATES_TO_TEXT[(int)uart_control.demanded_state-1]);
+            Serial.print(F("' mode. To quit, press 'q' or press one of the physical buttons on Crispy.\n"));
+        }        
+    }    
     memset(serial_feed_buffer, 0, buf_size);
     sm.release();
 }
