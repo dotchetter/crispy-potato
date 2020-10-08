@@ -197,7 +197,7 @@ void rainbow()
 void cycle()
 {
     int potentiometer_reading = getDigitalPotentiometerReading(POTENTIOMETER_PIN);
-    
+
     if (diodes[0].active)
     {
         diodes[0].active = 0;
