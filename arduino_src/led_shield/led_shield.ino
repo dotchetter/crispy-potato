@@ -91,9 +91,10 @@ void setup()
 
 void interruptDebounce()
 {
-    if (debounceKey(&last_press_millis, DEBOUNCE_MILLIS))
+    const unsigned long last_press_millis;
+    if (debounceKey(&key_interrupt, DEBOUNCE_MILLIS))
     {
-        if (keyOnClickEvent(&key_interrupt, last_press_millis))
+        if (keyOnClickEvent(&key_interrupt))
         {
             off();
         }  
